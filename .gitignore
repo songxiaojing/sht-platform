@@ -2,6 +2,8 @@
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
+#intelli profile
+sht-platform.iml
 
 # Package Files #
 *.jar
