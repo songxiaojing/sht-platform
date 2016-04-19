@@ -5,10 +5,9 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
@@ -22,36 +21,42 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import com.byw.web.platform.core.utils.Assert;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.byw.web.platform.core.utils.Utils;
+import com.byw.web.platform.core.utils.IOUtils;
 import com.byw.web.platform.log.PlatformLogger;
 
 
 /**
- * 
  * This server will fill the target service fields from configuration XML file.
- * 
+ * <p>
  * This server will fill the target service fields from configuration XML file.
- * 
- * @title PropertyLoaderService
- * @package com.topsec.tss.core.platform.core.services
+ *
  * @author baiyanwei
  * @version 1.0
+ * @title PropertyLoaderService
+ * @package com.topsec.tss.core.platform.core.services
  * @date 2014-5-15
- * 
  */
-@ServiceInfo(description = "Provides the ability to merge extension properties with configured properties.")
-public class PropertyLoaderService implements IService {
+@PlatformServiceInfo(description = "Provides the ability to merge extension properties with configured properties.")
+public class PropertyLoaderService implements IPlatformService {
 
     final private static PlatformLogger theLogger = PlatformLogger.getLogger(PropertyLoaderService.class);
+    /**
+     * service.xml配置文件的路径
+     */
     final public static String SERVICE_CONFIGURATION_PATH = "application.serviceCfgPath";
+    /**
+     * 配置文件的名称
+     */
     final public static String DEFAULT_SERVICE_CONFIGURATION_PATH = "service.xml";
-    final static public String EXTEND_RESOURCE_NAME = "extendResource";
-    final static public String EXTEND_RESOURCE_ELEMENT_NAME = "resource";
+    final static public String EXTEND_PROPERTIES_NAME = "extendProperties";
+    final static public String EXTEND_PROPERTIES_FILE_TYPE = ".properties";
+    final static public String EXTEND_PROPERTIES_ELEMENT_NAME = "properties";
 
     private Document _userDocument = null;
 
@@ -69,7 +74,7 @@ public class PropertyLoaderService implements IService {
     public void start() throws Exception {
 
         readDocument(getServiceConfigurationPath());
-        readextProperty();
+        loadExtendPropertyFile();
         theLogger.info("PropertyLoaderService is started~");
     }
 
@@ -78,50 +83,10 @@ public class PropertyLoaderService implements IService {
 
     }
 
-    /**
-     * read the extend properties.
-     * 
-     */
-    private void readextProperty() {
-
-        NodeList preportyList = _userDocument.getElementsByTagName(EXTEND_RESOURCE_NAME);
-        if (preportyList == null || preportyList.getLength() == 0) {
-            return;
-        }
-        ArrayList<String> extendResourceList = new ArrayList<String>();
-        for (int i = 0; i < preportyList.getLength(); i++) {
-            Element node = (Element) preportyList.item(i);
-            NodeList sonList = node.getElementsByTagName(EXTEND_RESOURCE_ELEMENT_NAME);
-            if (sonList == null || sonList.getLength() == 0) {
-                continue;
-            }
-            for (int j = 0; j < sonList.getLength(); j++) {
-                Element sonNode = (Element) sonList.item(j);
-                extendResourceList.add(sonNode.getFirstChild().getNodeValue());
-            }
-
-        }
-
-        for (int i = 0; i < extendResourceList.size(); i++) {
-            try {
-            	String path = Utils.format(new java.util.HashMap(), extendResourceList.get(i));
-                Properties one = Utils.loadProperties(path);
-                if (one == null) {
-                    continue;
-                }
-                _extProperty.putAll(one);
-            } catch (IOException e) {
-                theLogger.exception(e);
-                continue;
-            }
-
-        }
-        theLogger.debug(this._extProperty.toString());
-    }
 
     /**
      * Gets the file path.
-     * 
+     *
      * @return
      */
     public String getServiceConfigurationPath() {
@@ -135,11 +100,11 @@ public class PropertyLoaderService implements IService {
 
     /**
      * This method loads up the properties document. It will load two based on the file name and default file name properties.
-     * 
+     *
      * @param fileName
      * @param defaultName
      */
-    public boolean readDocument(String fileName) {
+    private boolean readDocument(String fileName) {
 
         _userDocument = parseStream(this.getClass().getClassLoader().getResourceAsStream(fileName));
         return _userDocument != null;
@@ -147,11 +112,10 @@ public class PropertyLoaderService implements IService {
 
     /**
      * This method loads up the properties document. It will take the supplied input stream and use it as the method to load the xml document.
-     * 
-     * @param fileName
-     * @param defaultName
+     *
+     * @param inputStream
      */
-    public boolean create(InputStream inputStream) {
+    private boolean create(InputStream inputStream) {
 
         _userDocument = parseStream(inputStream);
         return _userDocument != null;
@@ -160,7 +124,7 @@ public class PropertyLoaderService implements IService {
     /*
      * PUBLIC DATA GETS THAT WILL USE THE DOCUMENT
      */
-    public NodeList getList(String path) {
+    private NodeList getList(String path) {
 
         try {
             return (NodeList) _xpath.evaluate(path, _userDocument, XPathConstants.NODESET);
@@ -173,7 +137,7 @@ public class PropertyLoaderService implements IService {
     /*
      * DATA GETS WITH REFERENCE ITEM.
      */
-    public Object getValue(String path, Object defaultValue, QName type, Class<?> clazz, boolean firstTimeInject) {
+    private Object getValue(String path, Object defaultValue, QName type, Class<?> clazz, boolean firstTimeInject) {
 
         try {
             Node node = (Node) _xpath.evaluate(path, _userDocument, XPathConstants.NODE);
@@ -235,13 +199,13 @@ public class PropertyLoaderService implements IService {
 
     /**
      * This method injects the properties from configuration file
-     * 
+     *
      * @param service
      */
-    public void injectServiceProperties(IService service) {
+    public void injectServiceProperties(IPlatformService service) {
 
         Class<?> clazz = service.getClass();
-        ServiceInfo serviceInfo = clazz.getAnnotation(ServiceInfo.class);
+        PlatformServiceInfo serviceInfo = clazz.getAnnotation(PlatformServiceInfo.class);
         if (serviceInfo == null || serviceInfo.configurationPath().length() == 0) {
             return;
         }
@@ -255,7 +219,7 @@ public class PropertyLoaderService implements IService {
     /**
      * This method works the same ways as the one that doesn't supply the configuration path we use this method in the storage system to allow multiple service objects with different properties to be created.
      */
-    public void injectServiceProperties(IService service, String configurationPath) {
+    public void injectServiceProperties(IPlatformService service, String configurationPath) {
 
         inject(service, configurationPath, true);
         injectUsingConfIds(service, configurationPath);
@@ -263,13 +227,13 @@ public class PropertyLoaderService implements IService {
         // variables of the object and set their values.
     }
 
-    private void injectUsingConfIds(IService service, String configurationPath) {
+    private void injectUsingConfIds(IPlatformService service, String configurationPath) {
 
         MessageFormat f = new MessageFormat("//config[@id=''{0}'']");
         // List<String> ids = getAllConfIds(service);
         List<String> ids = getAllConfIds(configurationPath);
         for (String id : ids) {
-            inject(service, f.format(new String[] { id }), false);
+            inject(service, f.format(new String[]{id}), false);
         }
     }
 
@@ -290,11 +254,10 @@ public class PropertyLoaderService implements IService {
 
     /**
      * Re-implement to support the multi-layer configuration
-     * 
+     *
      * @param object
      * @param xpathContext
-     * @param firstTimeInject
-     *            This is used to predict that the already set value will be over writeen by default value.
+     * @param firstTimeInject This is used to predict that the already set value will be over writeen by default value.
      */
     private void inject(Object object, String xpathContext, boolean firstTimeInject) {
 
@@ -455,7 +418,7 @@ public class PropertyLoaderService implements IService {
 
     /**
      * replace the ${} value from properties.
-     * 
+     *
      * @param valueObj
      * @return
      */
@@ -467,6 +430,83 @@ public class PropertyLoaderService implements IService {
         if (valueObj.getClass() != java.lang.String.class) {
             return valueObj;
         }
-        return Utils.format(_extProperty, valueObj);
+        String content = (String) valueObj;
+
+        Pattern p = Pattern.compile("[$][{](.*?)[}]");
+        Matcher m = p.matcher(content.toString());
+        StringBuffer sb = new StringBuffer();
+        boolean isHas = false;
+        while (m.find()) {
+            //String keyword = m.group(0);
+            String target = m.group(1);
+            String replaceKeyValue=this._extProperty.getProperty(target);
+            if (replaceKeyValue != null) {
+                m.appendReplacement(sb, replaceKeyValue.replace("\\", "/"));
+            }
+            isHas = true;
+        }
+        if (!isHas) {
+            return content;
+        }
+
+        m.appendTail(sb);
+        return sb.toString();
     }
+    //
+
+    /**
+     * 加载扩展的属性文件内容.
+     */
+    private void loadExtendPropertyFile() throws Exception {
+
+        NodeList extPropertyNodeList = _userDocument.getElementsByTagName(EXTEND_PROPERTIES_NAME);
+        if (extPropertyNodeList == null || extPropertyNodeList.getLength() == 0) {
+            return;
+        }
+        ArrayList<String> extPropertyResFilePathList = new ArrayList<String>();
+        for (int i = 0; i < extPropertyNodeList.getLength(); i++) {
+            Element node = (Element) extPropertyNodeList.item(i);
+            NodeList sonList = node.getElementsByTagName(EXTEND_PROPERTIES_ELEMENT_NAME);
+            if (sonList == null || sonList.getLength() == 0) {
+                continue;
+            }
+            for (int j = 0; j < sonList.getLength(); j++) {
+                Element sonNode = (Element) sonList.item(j);
+                String extendPropertiesFileName = sonNode.getFirstChild().getNodeValue();
+                if (Assert.isEmptyString(extendPropertiesFileName) == true) {
+                    continue;
+                }
+                if (extendPropertiesFileName.endsWith(EXTEND_PROPERTIES_FILE_TYPE) == false) {
+                    theLogger.error("extResFileTypeError", extendPropertiesFileName);
+                    continue;
+                }
+                if (extPropertyResFilePathList.contains(sonNode.getFirstChild().getNodeValue()) == true) {
+                    theLogger.warn("extResＤuplicate", extendPropertiesFileName);
+                    continue;
+                }
+                extPropertyResFilePathList.add(sonNode.getFirstChild().getNodeValue());
+            }
+
+        }
+        //加载系统变量到扩展中
+        this._extProperty.putAll(System.getenv());
+        //加载扩展配置数据
+        for (int i = 0; i < extPropertyResFilePathList.size(); i++) {
+            try {
+                Properties one = IOUtils.createProperties(extPropertyResFilePathList.get(i));
+                if (one == null) {
+                    theLogger.error("loadExtResourceError", extPropertyResFilePathList.get(i));
+                    continue;
+                }
+                _extProperty.putAll(one);
+            } catch (IOException e) {
+                theLogger.error("loadExtResourceError", extPropertyResFilePathList.get(i));
+                theLogger.exception(e);
+                continue;
+            }
+
+        }
+//        theLogger.debug(this._extProperty.toString());
+    }
+
 }

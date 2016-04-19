@@ -19,14 +19,14 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import com.byw.web.platform.core.services.IService;
+import com.byw.web.platform.core.services.IPlatformService;
 import com.byw.web.platform.core.utils.Assert;
 import com.byw.web.platform.log.PlatformLogger;
 
 
 /**
  * @author baiyanwei
- * 
+ *         <p>
  *         this calss supplies common methods, delegates all methods of the DynamicBean Jun 1, 2012
  */
 public abstract class AbstractMetricMBean implements DynamicMBean {
@@ -46,16 +46,16 @@ public abstract class AbstractMetricMBean implements DynamicMBean {
 
     /**
      * register service into MBean Server
-     * 
+     *
      * @param jmxObjectName
      * @param service
      */
-    public void registerMBean(String jmxObjectName, IService service) {
+    public void registerMBean(String jmxObjectName, IPlatformService service) {
 
         if (Assert.isEmptyString(jmxObjectName) == true) {
             return;
         }
-        if (Assert.isNull(service) == true) {
+        if (service == null) {
             return;
         }
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -69,7 +69,7 @@ public abstract class AbstractMetricMBean implements DynamicMBean {
 
     /**
      * unregister server from MBean Server
-     * 
+     *
      * @param jmxObjectName
      * @param service
      */

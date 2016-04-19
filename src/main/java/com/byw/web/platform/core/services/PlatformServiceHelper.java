@@ -18,24 +18,24 @@ import com.byw.web.platform.log.PlatformLogger;
  * @date 2014-5-15
  * 
  */
-public class ServiceHelper<T extends IService> {
+final public class PlatformServiceHelper<T extends IPlatformService> {
 
-    final private static PlatformLogger theLogger = PlatformLogger.getLogger(ServiceHelper.class);
-    private static HashMap<String, IService> _registationMap = new HashMap<String, IService>();
+    final private static PlatformLogger theLogger = PlatformLogger.getLogger(PlatformServiceHelper.class);
+    final private static HashMap<String, IPlatformService> _platformServiceMap = new HashMap<String, IPlatformService>();
 
     /**
-     * register a service into OSGI frame.
+     * 注册一个平台服务.
      * 
      * @param <T>
      * @param service
      * @return
      */
-    public static <T extends IService> T registerService(T service) throws Exception {
+    public static <T extends IPlatformService> T registerService(T service) throws Exception {
 
         return registerService(service, true, true);
     }
 
-    public static <T extends IService> T registerService(T service, boolean isStartup, boolean isPropertyes) throws Exception {
+    public static <T extends IPlatformService> T registerService(T service, boolean isStartup, boolean isPropertyes) throws Exception {
 
         try {
             if (isPropertyes) {
@@ -52,10 +52,10 @@ public class ServiceHelper<T extends IService> {
                 service.start();
             }
 
-            _registationMap.put(service.getClass().getName(), service);
+            _platformServiceMap.put(service.getClass().getName(), service);
 
             //
-            ServiceInfo serviceAnnotation = service.getClass().getAnnotation(ServiceInfo.class);
+            PlatformServiceInfo serviceAnnotation = service.getClass().getAnnotation(PlatformServiceInfo.class);
             if (serviceAnnotation == null) {
                 theLogger.info("registerService", service.getClass().getName(), "");
             } else {
@@ -67,38 +67,38 @@ public class ServiceHelper<T extends IService> {
         return service;
     }
 
-    public static <T extends IService> T findService(Class<?> clazz) {
+    public static <T extends IPlatformService> T findService(Class<?> clazz) {
 
         return findService(clazz.getName());
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends IService> T findService(String clazz) {
+    public static <T extends IPlatformService> T findService(String clazz) {
 
-        if (clazz == null || clazz.length() == 0 || _registationMap.containsKey(clazz) == false) {
+        if (clazz == null || clazz.length() == 0 || _platformServiceMap.containsKey(clazz) == false) {
             return null;
         }
-        return (T) (_registationMap.get(clazz));
+        return (T) (_platformServiceMap.get(clazz));
     }
 
-    public static <T extends IService> void unregisterService(Class<IService> clazz) throws Exception {
+    public static <T extends IPlatformService> void unregisterService(Class<IPlatformService> clazz) throws Exception {
 
         unregisterService(clazz.getName());
     }
 
-    public static <T extends IService> void unregisterService(String clazz) throws Exception {
+    public static <T extends IPlatformService> void unregisterService(String clazz) throws Exception {
 
-        IService service = findService(clazz);
+        IPlatformService service = findService(clazz);
         if (service == null) {
             return;
         }
-        synchronized (_registationMap) {
-            _registationMap.remove(clazz);
+        synchronized (_platformServiceMap) {
+            _platformServiceMap.remove(clazz);
         }
         //
         service.stop();
         //
-        ServiceInfo serviceInfo = service.getClass().getAnnotation(ServiceInfo.class);
+        PlatformServiceInfo serviceInfo = service.getClass().getAnnotation(PlatformServiceInfo.class);
         if (serviceInfo == null) {
             theLogger.info("unregisterService", service.getClass().getName(), "");
         } else {
