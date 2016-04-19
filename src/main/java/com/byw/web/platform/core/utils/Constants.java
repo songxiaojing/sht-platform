@@ -5,13 +5,14 @@ import java.nio.charset.Charset;
 
 /**
  * @author baiyanwei Jul 8, 2013
- * 
  */
 public class Constants {
 
     public static final String GBK = "GBK";
 
     public static final String UTF_8 = "UTF-8";
+
+    public static final String ISO_8859_1 = "iso-8859-1";
 
     public static final Charset CHARSET_UTF_8 = Charset.forName(UTF_8);
 
@@ -31,7 +32,5 @@ public class Constants {
      * HMAC/SHA1 Algorithm per RFC 2104, used when generating S3 signatures.
      */
     public static final String HMAC_SHA1_ALGORITHM = "HmacSHA1";
-    // tss123                                        
-    public static final String USER_INIT_PASSWORD = "F3107048635B58BE292FE7AE6BAF48B5";
 
 }

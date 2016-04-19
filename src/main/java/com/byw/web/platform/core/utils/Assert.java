@@ -16,19 +16,6 @@ public final class Assert {
 
     }
 
-    /**
-     * check one object is null or not
-     * 
-     * @param o
-     * @return
-     */
-    final public static boolean isNull(Object o) {
-
-        if (null == o) {
-            return true;
-        }
-        return false;
-    }
 
     /**
      * check one string is empty or not empty:null,empty String,no letter.
@@ -69,5 +56,20 @@ public final class Assert {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Tests whether or not the url has a http or https prefix, if it does returns true else returns false.
+     *
+     * @param url
+     * @return
+     */
+    final public static boolean isHttpPrefix(String url) {
+
+        if (Assert.isEmptyString(url) == true) {
+            return false;
+        }
+
+        return url.toLowerCase().startsWith("http://") == true || url.toLowerCase().startsWith("https://") == true;
     }
 }

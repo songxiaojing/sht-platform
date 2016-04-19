@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <application>
-	<extendResource>
-		<resource>tss-core-cfg-jdbc.properties</resource>
-	</extendResource>
+	<extendProperties file="dksd.kkkd" />
+	<extendProperties file="dksd.kkkd" />
+	<extendProperties file="dksd.kkkd" />
 	<services>
 		<SimapleServices>
 			<jmxObjectName>MyTestServiceFieldValue</jmxObjectName>

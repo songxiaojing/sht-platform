@@ -11,39 +11,44 @@ import com.byw.web.platform.core.utils.Assert;
 
 
 /**
- * 
  * 平台日志配置工具.
- * 
+ * <p>
  * 平台日志配置工具.
- * 
+ *
+ * @author baiyanwei
  * @title PlatformLoggerConfiguration
  * @package com.topsec.tss.platform.log
- * @author baiyanwei
- * @version
  * @date 2014-12-11
- * 
  */
-public class PlatformLoggerConfiguration {
+final public class PlatformLoggerConfiguration {
 
-    /**
-     * logger.
-     */
-    final private static PlatformLogger theLogger = PlatformLogger.getLogger(PlatformLoggerConfiguration.class);
+    private static PlatformLoggerConfiguration _platformLoggerConfiguration = null;
+
+    private PlatformLoggerConfiguration() {
+
+    }
+
+    public static synchronized PlatformLoggerConfiguration getInstance() {
+        if (_platformLoggerConfiguration == null) {
+            _platformLoggerConfiguration = new PlatformLoggerConfiguration();
+        }
+        return _platformLoggerConfiguration;
+
+    }
 
     /**
      * 初始化平台日志配置.
-     * 
+     *
      * @param logConfigruation
      * @param frameworkPackageList
      * @throws Exception
      */
-    public static void initConfigurationForLogging(String logConfigruation, List<Class<?>> frameworkPackageList) throws Exception {
+    public synchronized void initConfigurationForLogging(String logConfigruation, List<Class<?>> frameworkPackageList) throws Exception {
 
-        if (logConfigruation == null || logConfigruation.trim().equals("")) {
+        if (logConfigruation == null || logConfigruation.trim().equals("") == true) {
             throw new Exception("invaild logging configuration path.");
         }
         try {
-            theLogger.info("Starting configurate for " + logConfigruation);
             //
             LoggerContext logContext = (LoggerContext) LoggerFactory.getILoggerFactory();
             //add platform logger into  getFrameworkPackages, for caller in logging recorder.
@@ -60,10 +65,9 @@ public class PlatformLoggerConfiguration {
             configurator.setContext(logContext);
             logContext.reset();
             //
-            configurator.doConfigure(PlatformLoggerConfiguration.class.getClassLoader().getResourceAsStream(logConfigruation));
-            theLogger.info("complete logger configuration.");
+            configurator.doConfigure(PlatformLoggerConfiguration.class.getClassLoader().getResourceAsStream(logConfigruation.trim()));
+            System.out.println("Platform Logger is set with " + logConfigruation);
         } catch (Exception e) {
-            theLogger.exception(e);
             throw e;
         }
     }

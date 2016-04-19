@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.byw.web.platform.core.services.PropertyLoaderService;
-import com.byw.web.platform.core.services.ServiceHelper;
+import com.byw.web.platform.core.services.PlatformServiceHelper;
 
 
 public class ServicesTest {
@@ -13,16 +13,16 @@ public class ServicesTest {
     @Before
     public void setUp() throws Exception {
 
-        ServiceHelper.registerService(new PropertyLoaderService(), true, false);
+        PlatformServiceHelper.registerService(new PropertyLoaderService(), true, false);
     }
 
     @Test
     public void test() throws Exception {
 
         SimapleServices service = new SimapleServices();
-        ServiceHelper.registerService(service);
+        PlatformServiceHelper.registerService(service);
 
-        SimapleServices findService = ServiceHelper.findService(SimapleServices.class);
+        SimapleServices findService = PlatformServiceHelper.findService(SimapleServices.class);
 
         Assert.assertNotNull(findService);
 
