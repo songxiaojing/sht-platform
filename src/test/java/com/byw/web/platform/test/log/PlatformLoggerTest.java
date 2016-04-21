@@ -15,7 +15,7 @@ public class PlatformLoggerTest {
     public void setUp() throws Exception {
 
         try {
-            PlatformLoggerConfiguration.initConfigurationForLogging("tss-core-cfg-logging.xml", null);
+            PlatformLoggerConfiguration.getInstance().initConfigurationForLogging("tss-core-cfg-logging.xml", null);
         } catch (Exception e) {
             e.printStackTrace();
         }
