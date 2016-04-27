@@ -17,7 +17,7 @@ public class Constants {
     public static final Charset CHARSET_UTF_8 = Charset.forName(UTF_8);
 
     /**
-     * The default encoding used for text data: UTF-8
+     * The default encoding used for text module: UTF-8
      */
     public static final String DEFAULT_ENCODING = "UTF-8";
 

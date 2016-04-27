@@ -48,7 +48,7 @@ public class PropertyLoaderService implements IPlatformService {
     /**
      * service.xml配置文件的路径
      */
-    final public static String SERVICE_CONFIGURATION_PATH = "application.serviceCfgPath";
+    final public static String SERVICE_CONFIGURATION_PATH = "app.cfg.service.path";
     /**
      * 配置文件的名称
      */
@@ -65,14 +65,18 @@ public class PropertyLoaderService implements IPlatformService {
 
     private Properties _extProperty = new Properties();
 
+
     public PropertyLoaderService() {
 
     }
 
     @Override
     public void start() throws Exception {
-
-        readDocument(getServiceConfigurationPath());
+        String cfgXmlFileName = getServiceConfigurationPath();
+        if (cfgXmlFileName == null) {
+            throw new Exception(SERVICE_CONFIGURATION_PATH + " is invalid.");
+        }
+        readDocument(cfgXmlFileName);
         loadExtendPropertyFile();
         theLogger.info("PropertyLoaderService is started~");
     }
@@ -438,7 +442,7 @@ public class PropertyLoaderService implements IPlatformService {
         while (m.find()) {
             //String keyword = m.group(0);
             String target = m.group(1);
-            String replaceKeyValue=this._extProperty.getProperty(target);
+            String replaceKeyValue = this._extProperty.getProperty(target);
             if (replaceKeyValue != null) {
                 m.appendReplacement(sb, replaceKeyValue.replace("\\", "/"));
             }
